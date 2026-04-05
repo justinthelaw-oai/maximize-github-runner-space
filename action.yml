@@ -344,7 +344,36 @@ runs:
           fi
         }
 
+        SUPPORTED_CLEANUP_PROFILES="max,custom"
+        SUPPORTED_SKIP_COMPONENTS="dotnet,android,haskell,codeql,cached-tools,cached-go,cached-node,cached-python,cached-pypy,cached-ruby,swift,julia,java,browsers,chrome,chromium,edge,firefox,webdrivers,selenium,powershell,miniconda,homebrew,vcpkg,aws-cli,aws-sam-cli,azure-cli,gh-cli,gcloud-cli,azcopy,kubectl,helm,kind,minikube,kustomize,docker-engine,buildah,podman,maven,gradle,ant,php,rust,postgresql,mysql,apache,nginx,docker-images,large-packages"
+
+        RAW_CLEANUP_PROFILE="${CLEANUP_PROFILE}"
+        CLEANUP_PROFILE=$(normalize_csv "${CLEANUP_PROFILE}")
+        if ! csv_contains "${SUPPORTED_CLEANUP_PROFILES}" "${CLEANUP_PROFILE}"; then
+          echo "::error::Invalid cleanup-profile '${RAW_CLEANUP_PROFILE}'. Supported values: ${SUPPORTED_CLEANUP_PROFILES}."
+          exit 1
+        fi
+
         SKIP_COMPONENTS_NORMALIZED=$(normalize_csv "${SKIP_COMPONENTS}")
+        if [[ -n "${SKIP_COMPONENTS_NORMALIZED}" ]]; then
+          IFS=',' read -r -a skip_components <<< "${SKIP_COMPONENTS_NORMALIZED}"
+          invalid_skip_components=()
+          for component in "${skip_components[@]}"; do
+            if [[ -z "${component}" ]]; then
+              continue
+            fi
+
+            if ! csv_contains "${SUPPORTED_SKIP_COMPONENTS}" "${component}"; then
+              invalid_skip_components+=("${component}")
+            fi
+          done
+
+          if [[ "${#invalid_skip_components[@]}" -gt 0 ]]; then
+            invalid_skip_components_csv=$(IFS=','; echo "${invalid_skip_components[*]}")
+            echo "::error::Invalid skip-components value(s): ${invalid_skip_components_csv}. Supported components: ${SUPPORTED_SKIP_COMPONENTS}."
+            exit 1
+          fi
+        fi
 
         echo "=== GitHub Runner Space Maximization Started ==="
         echo "Timestamp: $(date)"

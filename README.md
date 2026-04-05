@@ -168,6 +168,8 @@ docker-images
 large-packages
 ```
 
+If `cleanup-profile` is not `max` or `custom`, or if `skip-components` includes unknown component names, the action fails immediately before any cleanup begins.
+
 ## Inputs reference
 
 All `remove-*` inputs are optional toggles. In `cleanup-profile: max`, every component below is enabled unless listed in `skip-components`.
